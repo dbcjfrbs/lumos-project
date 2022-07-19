@@ -10,21 +10,26 @@ from util.ExecSSH import *
 app = fastapi.FastAPI()
 
 ## SCHEMA FUNCTION
-@app.get('/v1/mysql/schema/{service_id}/list', tags=["Report"])
-def schema_list(service_id:int) :
+@app.get('/v1/lumos/report', tags=["Report"])
+def report() :
 	workday = datetime.datetime.today().strftime("%Y%m%d")
-	Log = Logger("./logs/schema/{}.log".format(workday), 0)
-	Log.write_log(3, "[Schema][List][{}] Call Received\n".format(service_id))
+	Log = Logger("./logs/{}.log".format(workday), 0)
+	Log.write_log(3, "[LUMOS][Report] Call Received\n")
 	#code, result, output = list_schema(service_id, Log)
 	#return retJSON(code, result, output)
+
+	shell = ExecSSH(host='replica-slave.ay1.krane.9rum.cc', user='deploy', logger=Log)
+	exit_status, stdout, stderr = shell.exec_command("tail -n 4 a", "deploy")
+	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status), str(stdout), str(stderr)))
+	
 	return True
 
 @app.post('/v1/mysql/schema/{service_id}/create', tags=["Work"])
 def schema_create(service_id:int, CallDataSet:schema_api_model.createSchemaModel) :
 	schema_dict = CallDataSet.dict()
 	workday = datetime.datetime.today().strftime("%Y%m%d")
-	Log = Logger("./logs/schema/{}.log".format(workday), 0)
-	Log.write_log(3, "[Schema][Create][{}] Call Received\n\t{}\n".format(service_id, str(schema_dict)))
+	Log = Logger("./logs/{}.log".format(workday), 0)
+	Log.write_log(3, "[LUMOS][Create][{}] Call Received\n\t{}\n".format(service_id, str(schema_dict)))
 	#code, result, output = create_schema(service_id, schema_dict, Log)
 	#return retJSON(code, result, output)
 	return True
