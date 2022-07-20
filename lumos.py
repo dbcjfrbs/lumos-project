@@ -6,6 +6,7 @@ import requests
 from model import schema_api_model
 from util.Logger import *
 from util.ExecSSH import *
+from util.MysqlConnector import *
 from fastapi_utils.tasks import repeat_every
 
 app = fastapi.FastAPI()
@@ -46,6 +47,12 @@ def report() :
 	shell = ExecSSH(host='replica-slave.ay1.krane.9rum.cc', user='deploy', logger=Log)
 	exit_status, stdout, stderr = shell.exec_command("s", "deploy")
 	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status), str(stdout), str(stderr)))
+
+	dbconn = MysqlConnector('replica-master.ay1.krane.9rum.cc', 3306, 'kakao', 'test', 'test')
+	query = 'select name, cell from intern'
+	result = dbconn.execsql(query)
+	for row in result :
+		print("{} / {}".format(row[0], row[1]))
 	
 	return True
 
