@@ -1,0 +1,26 @@
+2022-07-19 20:54:27.593308 [INFO] [LUMOS][Create][1232] Call Received
+	{'schema_name': 'xyz', 'collation': 'abc'}
+2022-07-19 20:55:34.959211 [INFO] [LUMOS][Report] Call Received
+2022-07-19 21:05:03.728856 [INFO] [LUMOS][Report] Call Received
+2022-07-19 21:09:29.020016 [INFO] [LUMOS][Report] Call Received
+2022-07-19 21:09:29.155914 [INFO] Connect Complete (deploy@replica-slave.ay1.krane.9rum.cc)
+2022-07-19 21:09:29.202675 [INFO] CMD : ls -al [SUCCEED]
+2022-07-19 21:09:29.304902 [INFO] 0, total 1176104
+drwxr-x---  6 deploy deploy        300 Jul 19 21:08 .
+drwxr-xr-x. 6 root   root           62 Jun 21 19:23 ..
+-rw-r--r--  1 deploy deploy         12 Jul 19 21:02 a
+-rw-------  1 deploy deploy      11896 Jul 19 19:43 .bash_history
+-rw-r--r--  1 deploy deploy         18 Nov 25  2021 .bash_logout
+-rw-r--r--  1 deploy deploy        193 Nov 25  2021 .bash_profile
+-rw-r--r--  1 deploy deploy        231 Nov 25  2021 .bashrc
+drwxr-xr-x  3 deploy deploy         18 Jul 15 09:26 .cache
+drwxr-xr-x  3 deploy deploy         18 Jul 15 09:26 .config
+-rw-r--r--  1 deploy deploy        460 Jul 19 15:21 exe.sh
+-r--r-----  1 root   root          155 Jul 19 21:03 .k5login
+-rw-r--r--  1 deploy deploy 1204277208 Dec 18  2021 mysql-8.0.28-linux-glibc2.12-x86_64.tar.xz
+-rw-------  1 deploy deploy        797 Jul 19 19:43 .mysql_history
+drwxr-xr-x  7 deploy deploy         75 Jul 15 04:34 .smith
+drwx------  2 deploy deploy         80 Jul 19 21:08 .ssh
+-rw-r--r--  1 deploy deploy       2831 Jul 19 15:43 updated_since_last_batch.sh
+-rw-------  1 deploy deploy       5332 Jul 19 21:08 .viminfo, 
+2022-07-19 21:09:29.305041 [INFO] Disconnect Complete (deploy@replica-slave.ay1.krane.9rum.cc)
