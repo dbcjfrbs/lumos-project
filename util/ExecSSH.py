@@ -14,12 +14,17 @@ class ExecSSH:
 		self.buff_size = 2048		
 		self.pause = 0.1
 
-		key = paramiko.RSAKey.from_private_key_file('/home/deploy/.ssh/id_rsa')
+		key = paramiko.RSAKey.from_private_key_file('/Users/kakao/.ssh/id_rsa')
 		self.cli = paramiko.SSHClient()
 		self.cli.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
 		try:
+
+
 			self.cli.connect(self.host, port=22, username=self.user, pkey=key)
+
+
+
 			if self.logger:
 				self.logger.write_log(3,"Connect Complete ("+self.user+"@"+str(self.host)+")\n")
 			else:
@@ -114,12 +119,11 @@ class ExecSSH:
 		stdout = ''
 		stderr = ''
 		exit_status = 0
-		
+
 		if '###' not in command and len(command) and not command == '\n':
 			sshclicmd = self.cli.get_transport().open_session()
 			if user == 'root':
 				command = "sudo bash -c \"{}\"".format(command)
-			#print(command)print(command)
 			
 			if self.logger:
 				self.logger.write_log(3,"CMD : "+command)
@@ -152,12 +156,13 @@ class ExecSSH:
 							print(received, end='')
 				else : pass
 
-				count+=1;
+				count+=1
 				if count*self.pause > 7200 :
 					sshclicmd.close()
 					stderr='command timeout(2h)'
 					break
-
+			
+#			print('check1') # 여러 번
 			exit_status = sshclicmd.recv_exit_status()
 		
 
@@ -170,6 +175,7 @@ class ExecSSH:
 				else:	
 					if self.logger:
 						self.logger.write_log(3,' [ERROR]'+ colors.reset + '\n    --> ' + str(stderr) + '\n', header=False)
+
 					else:
 						print(colors.error + ' [ERROR]' + colors.reset + '\n	--> ' + str(stderr))
 
