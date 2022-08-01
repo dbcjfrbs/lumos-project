@@ -14,7 +14,8 @@ class ExecSSH:
 		self.buff_size = 2048		
 		self.pause = 0.1
 
-		key = paramiko.RSAKey.from_private_key_file('/Users/kakao/.ssh/id_rsa')
+#		key = paramiko.RSAKey.from_private_key_file('/Users/kakao/.ssh/id_rsa')
+		key = paramiko.RSAKey.from_private_key_file('/home/deploy/.ssh/id_rsa')
 		self.cli = paramiko.SSHClient()
 		self.cli.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
