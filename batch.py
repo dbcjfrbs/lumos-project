@@ -1,6 +1,7 @@
 from importlib.metadata import metadata
 from itertools import count
 import json
+from operator import truediv
 from ssl import Options
 from datetime import datetime
 from model import schema_api_model as schema
@@ -11,14 +12,10 @@ import re
 from typing import Optional
 from util.func import *
 
-### 초기화 - 맨 처음 가동 시 적용
-dbconn = MysqlConnector('localhost', 3306, 'analysis', 'root', 'root')
-query =f'select count(*) from metadata'
-rows=dbconn.execsql(query)[0][0]
-if rows==0: # 배치작업이 한번도 수행되지 않았다면 수행
-	lastday=0
-else: # 배치작업이 수행된 이후 서버 리로드 시 전날 date로 셋팅
-	lastday=int(datetime.datetime.today().strftime("%Y%m%d"))-1
+def notUpdated(return_data):
+	if return_data=='':
+		return True
+	return False
 
 ### mha에서 하루치 업데이트 된 로그만 가져오기
 def batchWork():
@@ -27,10 +24,11 @@ def batchWork():
 	global lastday
 	# 배치 당겨온 기록 남기기
 	workday = datetime.datetime.today().strftime("%Y%m%d")
-	Log = Logger("./logs/{}.log".format(workday), 0)
-	Log.write_log(3, "[LUMOS][Report] Call Received\n")
 
-	# mha ssh 접속해서 어제 자정부터 지금까지 업데이트 된 내역 가져오기     
+	Log = Logger("./logs/{}.log".format(workday), 0)
+
+	Log.write_log(3, "[LUMOS][Report] Call Received\n")	
+	# mha ssh 접속해서 어제 자정부터 지금까지 업데이트 된 내역 가져오기
 	shell = ExecSSH(host='mha-test.ay1.krane.9rum.cc', user='deploy', logger=Log)
 	#1. ls -al 확인하기 - manager, service_name, issue type, logfile, result
 	print0="{print $0}"
@@ -38,13 +36,16 @@ def batchWork():
 	cmd1=f"ls -al /data/* | grep ^- | awk '{print9}' | awk -F '[._]' '$4 >= {lastday} {print0}'"
 	exit_status1, stdout1, stderr1 = shell.exec_command(cmd1, "deploy")
 	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status1), str(stdout1), str(stderr1)))
+	
+	if notUpdated(stdout1):
+		return stdout1
 
 	#2. 각 파일 내용 확인하기 - started_at
 	cnt="{cnt}" 
 	file_cnt="{file_cnt}"
 	cmd2=f"file_cnt=$({cmd1} | wc -l);cnt=1;while [ ${cnt} -le ${file_cnt} ];do file_=$({cmd1} | head -$cnt | tail -1);file_path=$(sudo find /data -name $file_);cat $file_path | head -1 | cut -d ' ' -f 1-5;echo '_';cnt=$((cnt+1));done"
 	exit_status2, stdout2, stderr2 = shell.exec_command(cmd2, "deploy")
-	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status2), str(stdout2), str(stderr2)))	                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status2), str(stdout2), str(stderr2)))	 
 
 	#3. ls -al 확인하기 - ended_at
 	cmd3="ls -al /data/*/* --time-style full-iso | cut -d ' ' -f 6-7"
@@ -76,13 +77,13 @@ def batchWork():
 		eli=re.split('[.]', i)
 		parsed1.append(eli)
 
-	# started_at
+	# started_at	
 	tmp=stdout2.split('\n')
 	parsed2=[]
+	
 	for i in tmp:
 		if len(i)==1:
 			continue
-		
 		if i[0]=='_':
 			parsed2.append(i.lstrip('_'))
 		else:
@@ -141,7 +142,6 @@ def batchWork():
 			results.append("succeed")
 		else:
 			results.append("failure")
-	print(parsed6)
 
 
 ### 파싱 데이터 db에 저장
@@ -189,6 +189,19 @@ def batchWork():
 
 	lastday=workday
 	return ret
+
+
+### 초기화 - 맨 처음 가동 시 적용
+dbconn = MysqlConnector('localhost', 3306, 'analysis', 'root', 'root')
+query =f'select created_at from metadata order by id desc limit 1;'
+rows=dbconn.execsql(query)
+rows_cnt=len(rows)
+
+lastday=0
+
+if rows_cnt!=0: # 배치작업이 한번도 수행되지 않았다면 수행
+#	print(int(rows[0][0].strftime("%Y%m%d")))
+	lastday=int(rows[0][0].strftime("%Y%m%d"))
 
 batchWork()
 
