@@ -122,17 +122,21 @@ def switch_call():
 	Log.write_log(3, "[LUMOS][Report] Call Received\n")	
 	shell = ExecSSH(host='mha-practice.ay1.krane.9rum.cc', user='deploy', logger=Log)
 
-	cmd=f"masterha_master_switch --master_state=alive --conf=/etc/masterha/app1.cnf --new_master_host=slave-practice --interactive=0 2> /dev/null"
+	cmd=f"masterha_master_switch --master_state=alive --conf=/etc/masterha/app1.cnf --new_master_host=master-practice --interactive=0"
+	# cmd=f"masterha_master_switch --master_state=alive --conf=/etc/masterha/app1.cnf --new_master_host=slave-practice --interactive=0"
 	exit_status, stdout, stderr = shell.exec_command(cmd, "deploy")
 	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status), str(stdout), str(stderr)))
+
+	# return stdout
+
 	if "gtid inconsistency" in stdout:
 		return "switching is failed.\n because gtid inconsistency problem."
-	elif "known_hosts inconsistency" in stdout:
-		return "switching is failed.\n because known_hosts inconsistency."
-	elif "long query locked problem" in stdout:
+	# elif "known_hosts inconsistency" in stdout:
+	# 	return "switching is failed.\n because known_hosts inconsistency."
+	if "long query locked problem" in stdout:
 		return "switching is failed.\n because long query locked problem."
-	else:
-		return "switching is succeeded.\n"
+	return "switching is succeeded.\n"
+	# return stdout
 
 
 @app.get('/lumos/gtid_check', tags=["gtid_check"])
@@ -157,6 +161,8 @@ def gtid_check():
 	gtid_sets1=sorted(dbconn1.execsql(query3)[0][1].split(','))
 	gtid_sets2=sorted(dbconn2.execsql(query3)[0][1].split(','))	
 	size=len(gtid_sets1)
+	if len(gtid_sets1)!=len(gtid_sets2):
+		return 0
 	for i in range(size):
 		if master_uuid in gtid_sets1[i]: # 현재 업데이트 되고 있는 gtid에 대해서 대량 쿼리로 인해 master, slave 간 동기화 상태가 불일치하는 상황은 예외처리 해주기
 			continue
@@ -172,10 +178,11 @@ def known_hosts_check():
 	Log = Logger("./logs/{}.log".format(now), 0)
 	Log.write_log(3, "[LUMOS][Report] Call Received\n")	
 
-	# os.system("sed '/master-practice/d' /home/deploy/.ssh/known_hosts")
-	# os.system("sed '/slave-practice/d' /home/deploy/.ssh/known_hosts")
-	os.system("sed -i '' '/master-practice/d' ~/.ssh/known_hosts")
-	os.system("sed -i '' '/slave-practice/d' ~/.ssh/known_hosts")
+	os.system("sed -i '/master-practice/d' /home/deploy/.ssh/known_hosts; cat ~/.ssh/known_hosts")
+	os.system("sed -i '/slave-practice/d' /home/deploy/.ssh/known_hosts; cat ~/.ssh/known_hosts")
+	os.system("sed -i '/mha-practice/d' /home/deploy/.ssh/known_hosts; cat ~/.ssh/known_hosts")
+	# os.system("sed -i '' '/master-practice/d' ~/.ssh/known_hosts")
+	# os.system("sed -i '' '/slave-practice/d' ~/.ssh/known_hosts")
 
 	return "known_hosts information deleted."
 
@@ -190,10 +197,14 @@ def locked_long_query_check():
 
 	# blocking query(롱쿼리)가 시작된 시간 조회
 	query="select trx_started from information_schema.innodb_trx where trx_state='RUNNING' and trx_query is null order by trx_started;"
-	ret=dbconn.execsql(query)[0][0]
-	now=datetime.datetime.today()
-	if now-ret>datetime.timedelta(seconds=100):
-		return 0
+	ret=dbconn.execsql(query)
+
+	if len(ret)==0:
+		return 1
+	else:
+		now=datetime.datetime.today()
+		if now-ret[0][0]>datetime.timedelta(seconds=10):
+			return 0	
 	return 1
 
 
