@@ -37,11 +37,22 @@ def read_all():
 
 ### 기간별 장애유형 조회
 @app.get('/lumos/report_custom', tags=["report_custom"])
-def read_customed(service_name: Optional[str]="%", issue_type: Optional[str]="%", issue_detail:Optional[str]="%", started_at:Optional[str]="%", zone:Optional[str]="%", idc:Optional[str]="%", result:Optional[str]="%"):
+def read_customed(service_name: Optional[str]="%", issue_type: Optional[str]="%", issue_detail:Optional[str]="%", zone:Optional[str]="%", idc:Optional[str]="%", result:Optional[str]="%", started_at_from:Optional[str]="%", started_at_to:Optional[str]="%"):
+	# 입력값 양쪽 공백 없애기
+	service_name=service_name.strip()
+	issue_type=issue_type.strip()
+	issue_detail=issue_detail.strip()
+	zone=zone.strip()
+	idc=idc.strip()
+	result=result.strip()
+	started_at_from=started_at_from.strip()
+	started_at_to=started_at_to.strip()
+
 	ret=()
 
 	cols=["service_name", "issue_type", "issue_detail", "zone", "idc", "result"]
 	options=[service_name, issue_type, issue_detail, zone, idc, result]
+
 	ops_selected, cols_selected=[], []
 	for i in range(len(options)):
 		if options[i]!="%":
@@ -49,30 +60,36 @@ def read_customed(service_name: Optional[str]="%", issue_type: Optional[str]="%"
 			cols_selected.append(cols[i])
 
 	size=len(cols_selected)
-	if "~" in started_at: # 쿼리인자가 연속 범위로 들어왔을 때
-		started_range=started_at.split("~")
-		started_at_start=started_range[0].strip()
-		started_at_end=started_range[1].strip()		
 
-		dbconn = MysqlConnector('localhost', 3306, 'analysis', 'root', 'root')
-		
-		query="select "
-		for i in range(size):
-			query+=cols_selected[i]						
-			query+=", "
-		query+="count(*)"
-		query+=f" from metadata where service_name like '{service_name}' and issue_type like '{issue_type}' and issue_detail like '{issue_detail}' and zone like '{zone}' and idc like '{idc}' and result like '{result}' and started_at between '{started_at_start}' and '{started_at_end}'"
+	# db 연동 및 쿼리 생성
+	dbconn = MysqlConnector('localhost', 3306, 'analysis', 'root', 'root')
+	
+	query="select "
+	for i in range(size):
+		query+=cols_selected[i]						
+		query+=", "
+	query+="count(*)"
+	query+=f" from metadata where service_name like '{service_name}' and issue_type like '{issue_type}' and issue_detail like '{issue_detail}' and zone like '{zone}' and idc like '{idc}' and result like '{result}'"
+	# 기간 조건 설정
+	if '%' in started_at_from and '%' in started_at_to:
+		pass
+	elif '%' in started_at_from and '%' not in started_at_to:
+		query+=f" and '{started_at_to}' >= started_at"
+	elif '%' not in started_at_from and '%' in started_at_to:
+		query+=f" and '{started_at_from}' <= started_at"
+	else:
+		query+=f" and started_at between '{started_at_from}' and '{started_at_to}'"
 
-		if size>0:
-			query+=" group by "
-		for i in range(size):
-			query+=cols_selected[i]						
-			if i==size-1:
-				continue
-			query+=", "
-		print(query)
-		ret+=dbconn.execsql(query)
-		
+	if size>0:
+		query+=" group by "
+	for i in range(size):
+		query+=cols_selected[i]						
+		if i==size-1:
+			continue
+		query+=", "
+	print(query)
+	ret+=dbconn.execsql(query)
+
 	print(ret)
 	metadatas=[]
 	for i in ret:
@@ -86,55 +103,37 @@ def read_customed(service_name: Optional[str]="%", issue_type: Optional[str]="%"
 	return metadatas
 
 
-# @app.post('/v1/mysql/schema/{service_id}/create', tags=["Work"])
-# def schema_create(service_id:int, CallDataSet:schema.createSchemaModel) :
-# 	schema_dict = CallDataSet.dict()
-# 	workday = datetime.datetime.today().strftime("%Y%m%d")
-# 	Log = Logger("./logs/{}.log".format(workday), 0)
-# 	Log.write_log(3, "[LUMOS][Create][{}] Call Received\n\t{}\n".format(service_id, str(schema_dict)))
-# 	#code, result, output = create_schema(service_id, schema_dict, Log)
-# 	#return retJSON(code, result, output)
-# 	return True
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-### 일단 vip 기반 mha 구성한 거에서 로직 짜고 있음
-### mha manager에 접속 및 switch shell script 실행
+### mha manager 접속 및 switch shell script 실행
+### 대체로 만든 switch call이니 cnf에서 서버 정보를 가져오진 않음
 @app.get('/lumos/switch_call', tags=["switch_call"])
 def switch_call():
 	now = datetime.datetime.today().strftime("%Y%m%d")
 	Log = Logger("./logs/{}.log".format(now), 0)
-	Log.write_log(3, "[LUMOS][Report] Call Received\n")	
+	Log.write_log(3, "[LUMOS][Report] Call Received\n")
 	shell = ExecSSH(host='mha-practice.ay1.krane.9rum.cc', user='deploy', logger=Log)
 
-	cmd=f"masterha_master_switch --master_state=alive --conf=/etc/masterha/app1.cnf --new_master_host=master-practice --interactive=0"
-	# cmd=f"masterha_master_switch --master_state=alive --conf=/etc/masterha/app1.cnf --new_master_host=slave-practice --interactive=0"
+	# db 연동 및 master host 획득(switching call을 master에 보내야 하기에 현 slave host를 알아야 함)
+	dbconn1 = MysqlConnector('master-practice.ay1.krane.9rum.cc', 3306, 'analysis', 'mha', 'mha')
+
+	query1="show processlist;"
+	ret=dbconn1.execsql(query1)
+
+	slave_host="master-practice"
+	for i in ret:
+		if i[4]=="Binlog Dump GTID":
+			slave_host="slave-practice"
+			break
+
+	cmd=f"masterha_master_switch --master_state=alive --conf=/etc/masterha/app1.cnf --new_master_host={slave_host} --interactive=0"
 	exit_status, stdout, stderr = shell.exec_command(cmd, "deploy")
 	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status), str(stdout), str(stderr)))
 
-	# return stdout
-
 	if "gtid inconsistency" in stdout:
 		return "switching is failed.\n because gtid inconsistency problem."
-	# elif "known_hosts inconsistency" in stdout:
-	# 	return "switching is failed.\n because known_hosts inconsistency."
+	elif "known_hosts inconsistency" in stdout:
+		return "switching is failed.\n because known_hosts inconsistency."
 	if "long query locked problem" in stdout:
-		return "switching is failed.\n because long query locked problem."
+		return "switching is failed.\n because lock problem."
 	return "switching is succeeded.\n"
 	# return stdout
 
@@ -172,22 +171,70 @@ def gtid_check():
 
 
 # ssh 접속 전에 hosts 정보 삭제하도록 함
-@app.get('/lumos/known_hosts_check', tags=["known_hosts_check"])
-def known_hosts_check():
+# @app.get('/lumos/known_hosts_check', tags=["known_hosts_check"])
+# def known_hosts_check():
+# 	now = datetime.datetime.today().strftime("%Y%m%d")
+# 	Log = Logger("./logs/{}.log".format(now), 0)
+# 	Log.write_log(3, "[LUMOS][Report] Call Received\n")	
+
+# 	# lumos server known_hosts 파일 내용 삭제
+# 	os.system("sed -i '/mha-practice/d' /home/deploy/.ssh/known_hosts; cat ~/.ssh/known_hosts")
+# 	os.system("sed -i '/master-practice/d' /home/deploy/.ssh/known_hosts; cat ~/.ssh/known_hosts")
+# 	os.system("sed -i '/slave-practice/d' /home/deploy/.ssh/known_hosts; cat ~/.ssh/known_hosts")
+
+# 	# 매니저에 접속해서 cnf 파일에서 master, slave 값을 가져와야 하나?
+
+# 	# mha, master, salve 각 서버 known_hosts 파일 내용 삭제
+# 	shell1 = ExecSSH(host='mha-practice.ay1.krane.9rum.cc', user='deploy', logger=Log)
+# 	shell2 = ExecSSH(host='master-practice.ay1.krane.9rum.cc', user='deploy', logger=Log)
+# 	shell3 = ExecSSH(host='slave-practice.ay1.krane.9rum.cc', user='deploy', logger=Log)
+
+# 	cmd1=f"sed -i '/[master-practice/d' /home/deploy/.ssh/known_hosts;sed -i '/slave-practice/d' /home/deploy/.ssh/known_hosts;"
+# 	exit_status1, stdout1, stderr1 = shell1.exec_command(cmd1, "deploy")
+# 	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status1), str(stdout1), str(stderr1)))
+
+# 	cmd2=f"sed -i '/slave-practice/d' /home/deploy/.ssh/known_hosts;sed -i '/mha-practice/d' /home/deploy/.ssh/known_hosts;"
+# 	exit_status2, stdout2, stderr2 = shell2.exec_command(cmd2, "deploy")
+# 	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status2), str(stdout2), str(stderr2)))
+
+# 	cmd3=f"sed -i '/mha-practice/d' /home/deploy/.ssh/known_hosts; sed -i '/master-practice/d' /home/deploy/.ssh/known_hosts;"
+# 	exit_status3, stdout3, stderr3 = shell3.exec_command(cmd3, "deploy")
+# 	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status3), str(stdout3), str(stderr3)))
+
+# 	return "known_hosts information deleted."
+
+
+
+
+
+
+
+
+
+@app.post('/lumos/known_hosts_check', tags=["known_hosts_check"])
+def known_hosts_check(node: str):
 	now = datetime.datetime.today().strftime("%Y%m%d")
 	Log = Logger("./logs/{}.log".format(now), 0)
 	Log.write_log(3, "[LUMOS][Report] Call Received\n")	
 
-	os.system("sed -i '/master-practice/d' /home/deploy/.ssh/known_hosts; cat ~/.ssh/known_hosts")
-	os.system("sed -i '/slave-practice/d' /home/deploy/.ssh/known_hosts; cat ~/.ssh/known_hosts")
-	os.system("sed -i '/mha-practice/d' /home/deploy/.ssh/known_hosts; cat ~/.ssh/known_hosts")
-	# os.system("sed -i '' '/master-practice/d' ~/.ssh/known_hosts")
-	# os.system("sed -i '' '/slave-practice/d' ~/.ssh/known_hosts")
+	shell = ExecSSH(host=node, user='deploy', logger=Log)
+	cmd=f"cat /dev/null > /home/deploy/.ssh/known_hosts"
+	exit_status, stdout, stderr = shell.exec_command(cmd, "deploy")
+	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status), str(stdout), str(stderr)))
 
 	return "known_hosts information deleted."
 
 
-# locked_long_query
+
+
+
+
+
+
+
+
+
+# lock issue
 @app.get('/lumos/locked_long_query_check', tags=["locked_long_query_check"])
 def locked_long_query_check():
 	now = datetime.datetime.today()
@@ -195,10 +242,25 @@ def locked_long_query_check():
 	Log.write_log(3, "[LUMOS][Report] Call Received\n")	
 	dbconn = MysqlConnector('slave-practice.ay1.krane.9rum.cc', 3306, 'analysis', 'mha', 'mha')
 
+	# dbconn1 = MysqlConnector('master-practice.ay1.krane.9rum.cc', 3306, 'analysis', 'mha', 'mha')
+	# query1="show processlist;"
+	# ret=dbconn1.execsql(query1)
+	# master_host="slave-practice"
+	# for i in ret:
+	# 	if i[4]=="Binlog Dump GTID":
+	# 		master_host="master-practice"
+	# 		break
+
+	# if master_host=="master-practice":
+	# 	dbconn = MysqlConnector('master-pratice.ay1.krane.9rum.cc', 3306, 'analysis', 'mha', 'mha')
+	# else:
+	# 	dbconn = MysqlConnector('slave-pratice.ay1.krane.9rum.cc', 3306, 'analysis', 'mha', 'mha')
+
+	# print(master_host)
 	# blocking query(롱쿼리)가 시작된 시간 조회
 	query="select trx_started from information_schema.innodb_trx where trx_state='RUNNING' and trx_query is null order by trx_started;"
 	ret=dbconn.execsql(query)
-
+	print(ret)
 	if len(ret)==0:
 		return 1
 	else:
