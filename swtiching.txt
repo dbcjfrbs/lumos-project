@@ -1,0 +1,125 @@
+Wed Aug 10 00:39:14 2022 - [info] MHA::MasterRotate version 0.58.
+Wed Aug 10 00:39:14 2022 - [info] Starting online master switch..
+Wed Aug 10 00:39:14 2022 - [info]
+Wed Aug 10 00:39:14 2022 - [info] * Phase 1: Configuration Check Phase..
+Wed Aug 10 00:39:14 2022 - [info]
+
+####1111111111
+Wed Aug 10 00:39:14 2022 - [warning] Global configuration file /etc/masterha_default.cnf not found. Skipping.
+Wed Aug 10 00:39:14 2022 - [info] Reading application default configuration from /etc/masterha/app1.cnf..
+Wed Aug 10 00:39:14 2022 - [info] Reading server configuration from /etc/masterha/app1.cnf..
+
+
+##########4 master/slave 성정 이상 확인
+Wed Aug 10 00:39:15 2022 - [info] GTID failover mode = 1
+Wed Aug 10 00:39:15 2022 - [info] Current Alive Master: master-practice(10.202.30.112:3306)
+Wed Aug 10 00:39:15 2022 - [info] Alive Slaves:
+Wed Aug 10 00:39:15 2022 - [info]   slave-practice(10.202.50.27:3306)  Version=8.0.30 (oldest major version between slaves) log-bin:enabled
+Wed Aug 10 00:39:15 2022 - [info]     GTID ON
+Wed Aug 10 00:39:15 2022 - [info]     Replicating from master-practice(10.202.30.112:3306)
+Wed Aug 10 00:39:15 2022 - [info]     Primary candidate for the new Master (candidate_master is set)
+
+
+##########6, 7 flush table, health check
+Wed Aug 10 00:39:15 2022 - [info] Executing FLUSH NO_WRITE_TO_BINLOG TABLES. This may take long time..
+Wed Aug 10 00:39:15 2022 - [info]  ok.
+Wed Aug 10 00:39:15 2022 - [info] Checking MHA is not monitoring or doing failover..
+Wed Aug 10 00:39:15 2022 - [info] Checking replication health on slave-practice..
+Wed Aug 10 00:39:15 2022 - [info]  ok.
+Wed Aug 10 00:39:15 2022 - [info] slave-practice can be new master.
+Wed Aug 10 00:39:15 2022 - [info]
+From:
+master-practice(10.202.30.112:3306) (current master)
+ +--slave-practice(10.202.50.27:3306)
+
+To:
+slave-practice(10.202.50.27:3306) (new master)
+Wed Aug 10 00:39:15 2022 - [info] Checking whether slave-practice(10.202.50.27:3306) is ok for the new master..
+Wed Aug 10 00:39:15 2022 - [info]  ok.
+Wed Aug 10 00:39:15 2022 - [info] ** Phase 1: Configuration Check Phase completed.
+
+
+
+Wed Aug 10 00:39:15 2022 - [info]
+Wed Aug 10 00:39:15 2022 - [info] * Phase 2: Rejecting updates Phase..
+Wed Aug 10 00:39:15 2022 - [info]
+Wed Aug 10 00:39:15 2022 - [info] Executing master ip online change script to disable write on the current master:
+Wed Aug 10 00:39:15 2022 - [info]   /masterha/scripts/master_ip_online_change --command=stop --orig_master_host=master-practice --orig_master_ip=10.202.30.112 --orig_master_port=3306 --orig_master_user='mha' --new_master_host=slave-practice --new_master_ip=10.202.50.27 --new_master_port=3306 --new_master_user='mha' --orig_master_ssh_user=deploy --new_master_ssh_user=deploy   --orig_master_password=xxx --new_master_password=xxx
+Wed Aug 10 00:39:15 2022 811592 Set read_only on the new master.. ok.
+
+
+# 수행중인 세션 킬
+Wed Aug 10 00:39:15 2022 815252 Waiting all running 2 threads are disconnected.. (max 1500 milliseconds)
+{'Time' => '725500','db' => undef,'Id' => '8','User' => 'event_scheduler','State' => 'Waiting on empty queue','Command' => 'Daemon','Info' => undef,'Host' => 'localhost'}
+{'Time' => '138','db' => undef,'Id' => '610','User' => 'repl_user','State' => 'Source has sent all binlog to replica; waiting for more updates','Command' => 'Binlog Dump GTID','Info' => undef,'Host' => 'slave-practice:33708'}
+Wed Aug 10 00:39:16 2022 316257 Waiting all running 2 threads are disconnected.. (max 1000 milliseconds)
+{'Time' => '725501','db' => undef,'Id' => '8','User' => 'event_scheduler','State' => 'Waiting on empty queue','Command' => 'Daemon','Info' => undef,'Host' => 'localhost'}
+{'Time' => '139','db' => undef,'Id' => '610','User' => 'repl_user','State' => 'Source has sent all binlog to replica; waiting for more updates','Command' => 'Binlog Dump GTID','Info' => undef,'Host' => 'slave-practice:33708'}
+Wed Aug 10 00:39:16 2022 816933 Waiting all running 2 threads are disconnected.. (max 500 milliseconds)
+{'Time' => '725501','db' => undef,'Id' => '8','User' => 'event_scheduler','State' => 'Waiting on empty queue','Command' => 'Daemon','Info' => undef,'Host' => 'localhost'}
+{'Time' => '139','db' => undef,'Id' => '610','User' => 'repl_user','State' => 'Source has sent all binlog to replica; waiting for more updates','Command' => 'Binlog Dump GTID','Info' => undef,'Host' => 'slave-practice:33708'}
+Wed Aug 10 00:39:17 2022 317637 Set read_only=1 on the orig master.. ok.
+Wed Aug 10 00:39:17 2022 319057 Waiting all running 2 queries are disconnected.. (max 500 milliseconds)
+{'Time' => '725502','db' => undef,'Id' => '8','User' => 'event_scheduler','State' => 'Waiting on empty queue','Command' => 'Daemon','Info' => undef,'Host' => 'localhost'}
+{'Time' => '140','db' => undef,'Id' => '610','User' => 'repl_user','State' => 'Source has sent all binlog to replica; waiting for more updates','Command' => 'Binlog Dump GTID','Info' => undef,'Host' => 'slave-practice:33708'}
+Wed Aug 10 00:39:17 2022 818230 Killing all application threads..
+Wed Aug 10 00:39:17 2022 819225 done.
+Wed Aug 10 00:39:17 2022 - [info]  ok.
+
+# 기존 마스터 변경 방지 구문 적용
+Wed Aug 10 00:39:17 2022 - [info] Locking all tables on the orig master to reject updates from everybody (including root):
+Wed Aug 10 00:39:17 2022 - [info] Executing FLUSH TABLES WITH READ LOCK..
+Wed Aug 10 00:39:17 2022 - [info]  ok.
+
+#기존 마스터 빈로그 값 확인
+Wed Aug 10 00:39:17 2022 - [info] Orig master binlog:pos is binlog.000001:741.
+Wed Aug 10 00:39:17 2022 - [info]  Waiting to execute all relay logs on slave-practice(10.202.50.27:3306)..
+Wed Aug 10 00:39:17 2022 - [info]  master_pos_wait(binlog.000001:741) completed on slave-practice(10.202.50.27:3306). Executed 0 events.
+Wed Aug 10 00:39:17 2022 - [info]   done.
+
+#새 마스터 빈 로그 확인 및 구문 생성
+Wed Aug 10 00:39:17 2022 - [info] Getting new master's binlog name and position..
+Wed Aug 10 00:39:17 2022 - [info]  binlog.000001:749
+Wed Aug 10 00:39:17 2022 - [info]  All other slaves should start replication from here. Statement should be: CHANGE MASTER TO MASTER_HOST='slave-practice or 10.202.50.27', MASTER_PORT=3306, MASTER_AUTO_POSITION=1, MASTER_USER='repl_user', MASTER_PASSWORD='xxx';
+
+# 스크립트 start 수행
+Wed Aug 10 00:39:17 2022 - [info] Executing master ip online change script to allow write on the new master:
+Wed Aug 10 00:39:17 2022 - [info]   /masterha/scripts/master_ip_online_change --command=start --orig_master_host=master-practice --orig_master_ip=10.202.30.112 --orig_master_port=3306 --orig_master_user='mha' --new_master_host=slave-practice --new_master_ip=10.202.50.27 --new_master_port=3306 --new_master_user='mha' --orig_master_ssh_user=deploy --new_master_ssh_user=deploy   --orig_master_password=xxx --new_master_password=xxx
+Wed Aug 10 00:39:17 2022 936247 Set read_only=0 on the new master.
+
+
+####################### vip change 이상 발생 - 임의로 설정한 vip 서버로 ssh 접속 시 비밀번호 불가
+####################### 크레인 하나를 ip를 vip로 설정해서 다시 해보겠음. 다시 한거임
+VIP IS Alive, VIP Relocate slave-practice
+The authenticity of host 'mha-master-vip (10.202.113.11)' can't be established.
+ECDSA key fingerprint is SHA256:Zcdxr9IL/x1TW0V8sauVyBQ29bN0tNCybcXdTybz9fk.
+ECDSA key fingerprint is MD5:fc:12:81:ae:d4:65:f7:13:da:c1:2c:a4:6a:99:37:45.
+Are you sure you want to continue connecting (yes/no)? ARPING 10.202.113.11 from 10.202.113.11 eth0
+Unicast reply from 10.202.113.11 [FA:16:3E:16:F9:88]  4.425ms
+Sent 1 probes (1 broadcast(s))
+Received 1 response(s)
+Thu Aug 11 02:26:39 2022 - [info]  ok.
+Thu Aug 11 02:26:39 2022 - [info]
+
+
+///////////////////////  orig 마스터 외 다른 슬레이브는 뉴 마스터에 바로 붙음.
+Wed Aug 10 00:39:46 2022 - [info] * Switching slaves in parallel..
+Wed Aug 10 00:39:46 2022 - [info]
+
+# unlock table
+Wed Aug 10 00:39:46 2022 - [info] Unlocking all tables on the orig master:
+Wed Aug 10 00:39:46 2022 - [info] Executing UNLOCK TABLES..
+Wed Aug 10 00:39:46 2022 - [info]  ok.
+Wed Aug 10 00:39:46 2022 - [info] All new slave servers switched successfully.
+Wed Aug 10 00:39:46 2022 - [info]
+
+
+
+
+
+
+
+Wed Aug 10 00:39:46 2022 - [info] * Phase 5: New master cleanup phase..
+Wed Aug 10 00:39:46 2022 - [info]
+Wed Aug 10 00:39:46 2022 - [info]  slave-practice: Resetting slave info succeeded.
+Wed Aug 10 00:39:46 2022 - [info] Switching master to slave-practice(10.202.50.27:3306) completed successfully.

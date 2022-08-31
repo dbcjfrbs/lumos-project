@@ -1,0 +1,285 @@
+Tue May 24 15:22:03 2022 - [info] MHA::MasterRotate version 0.56.
+Tue May 24 15:22:03 2022 - [info] Starting online master switch..
+Tue May 24 15:22:03 2022 - [info]
+Tue May 24 15:22:03 2022 - [info] * Phase 1: Configuration Check Phase..
+Tue May 24 15:22:03 2022 - [info]
+#######1111111 cnf파일 확인
+Tue May 24 15:22:03 2022 - [info] Reading default configuration from /db/programs/mha/conf/masterha_default.cnf..
+Tue May 24 15:22:03 2022 - [info] Reading application default configuration from /data/sun-partition1g01/sun-partition1g01.cnf..
+Tue May 24 15:22:03 2022 - [info] Reading server configuration from /data/sun-partition1g01/sun-partition1g01.cnf..
+
+
+#######222222222 리플레케이션 커넥션 확인
+Tue May 24 15:22:03 2022 - [debug] Connecting to servers..
+Tue May 24 15:22:04 2022 - [debug]  Connected to: sun-partition-my1.pg1.krane.9rum.cc(10.194.34.0:3306), user=kamha
+Tue May 24 15:22:04 2022 - [debug]  Number of slave worker threads on host sun-partition-my1.pg1.krane.9rum.cc(10.194.34.0:3306): 0
+Tue May 24 15:22:04 2022 - [debug]  Connected to: sun-partition-my2.pg1.krane.9rum.cc(10.194.41.169:3306), user=kamha
+Tue May 24 15:22:04 2022 - [debug]  Number of slave worker threads on host sun-partition-my2.pg1.krane.9rum.cc(10.194.41.169:3306): 0
+Tue May 24 15:22:04 2022 - [debug]  Connected to: dbrecovery-normal-gs8.dakao.io(10.41.143.88:3306), user=kamha
+Tue May 24 15:22:04 2022 - [debug]  Number of slave worker threads on host dbrecovery-normal-gs8.dakao.io(10.41.143.88:3306): 0
+Tue May 24 15:22:04 2022 - [info] MHA::ServerManager=HASH(0x340df60)
+
+
+########333333333 버전 체크
+Tue May 24 15:22:04 2022 - [debug]  Comparing MySQL versions..
+Tue May 24 15:22:04 2022 - [info] 008000
+Tue May 24 15:22:04 2022 - [info] 008000
+Tue May 24 15:22:04 2022 - [debug]   Comparing MySQL versions done.
+Tue May 24 15:22:04 2022 - [debug] Connecting to servers done.
+
+
+##########4444444444 master/slave 성정 이상 확인
+Tue May 24 15:22:04 2022 - [info] GTID failover mode = 1
+Tue May 24 15:22:04 2022 - [info] Current Alive Master: sun-partition-my2.pg1.krane.9rum.cc(10.194.41.169:3306)
+Tue May 24 15:22:04 2022 - [info] Alive Slaves:
+Tue May 24 15:22:04 2022 - [info]   sun-partition-my1.pg1.krane.9rum.cc(10.194.34.0:3306)  Version=8.0.25-15 (oldest major version between slaves) log-bin:enabled
+Tue May 24 15:22:04 2022 - [info]     GTID ON
+Tue May 24 15:22:04 2022 - [debug]    Relay log info repository: TABLE
+Tue May 24 15:22:04 2022 - [info]     Replicating from sun-partition-my2.pg1.krane.9rum.cc(10.194.41.169:3306)
+Tue May 24 15:22:04 2022 - [info]   dbrecovery-normal-gs8.dakao.io(10.41.143.88:3306)  Version=8.0.25-15 (oldest major version between slaves) log-bin:enabled
+Tue May 24 15:22:04 2022 - [info]     GTID ON
+Tue May 24 15:22:04 2022 - [debug]    Relay log info repository: TABLE
+Tue May 24 15:22:04 2022 - [info]     Replicating from sun-partition-my2.pg1.krane.9rum.cc(10.194.41.169:3306)
+Tue May 24 15:22:04 2022 - [info]     Not candidate for the new Master (no_master is set)
+
+
+###########5, 6 리플 계정 권한 체크 및 flush table
+erTue May 24 15:22:04 2022 - [info] Checking Replication user privileges on sun-partition-my1.pg1.krane.9rum.cc
+Tue May 24 15:22:04 2022 - [info] Checking Replication user privileges on sun-partition-my2.pg1.krane.9rum.cc
+Tue May 24 15:22:04 2022 - [info] Checking Replication user privileges on dbrecovery-normal-gs8.dakao.io
+Tue May 24 15:22:04 2022 - [info] Executing FLUSH NO_WRITE_TO_BINLOG TABLES. This may take long time..
+Tue May 24 15:22:04 2022 - [info]  ok.
+Tue May 24 15:22:04 2022 - [info] Checking MHA is not monitoring or doing failover..
+Tue May 24 15:22:04 2022 - [info] Checking replication health on sun-partition-my1.pg1.krane.9rum.cc..
+Tue May 24 15:22:04 2022 - [info]  ok.
+Tue May 24 15:22:04 2022 - [info] Checking replication health on dbrecovery-normal-gs8.dakao.io..
+Tue May 24 15:22:04 2022 - [info]  ok.
+Tue May 24 15:22:04 2022 - [info] Searching new master from slaves..
+Tue May 24 15:22:04 2022 - [info]  Candidate masters from the configuration file:
+Tue May 24 15:22:04 2022 - [info]  Non-candidate masters:
+Tue May 24 15:22:04 2022 - [info]   dbrecovery-normal-gs8.dakao.io(10.41.143.88:3306)  Version=8.0.25-15 (oldest major version between slaves) log-bin:enabled
+Tue May 24 15:22:04 2022 - [info]     GTID ON
+Tue May 24 15:22:04 2022 - [debug]    Relay log info repository: TABLE
+Tue May 24 15:22:04 2022 - [info]     Replicating from sun-partition-my2.pg1.krane.9rum.cc(10.194.41.169:3306)
+Tue May 24 15:22:04 2022 - [info]     Not candidate for the new Master (no_master is set)
+Tue May 24 15:22:04 2022 - [info]  Searching from all slaves which have received the latest relay log events..
+Tue May 24 15:22:04 2022 - [info]
+From:
+sun-partition-my2.pg1.krane.9rum.cc(10.194.41.169:3306) (current master)
+ +--sun-partition-my1.pg1.krane.9rum.cc(10.194.34.0:3306)
+ +--dbrecovery-normal-gs8.dakao.io(10.41.143.88:3306)
+
+To:
+sun-partition-my1.pg1.krane.9rum.cc(10.194.34.0:3306) (new master)
+ +--dbrecovery-normal-gs8.dakao.io(10.41.143.88:3306)
+ +--sun-partition-my2.pg1.krane.9rum.cc(10.194.41.169:3306)
+Tue May 24 15:22:04 2022 - [info] Checking whether sun-partition-my1.pg1.krane.9rum.cc(10.194.34.0:3306) is ok for the new master..
+Tue May 24 15:22:04 2022 - [info]  ok.
+Tue May 24 15:22:04 2022 - [info] sun-partition-my2.pg1.krane.9rum.cc(10.194.41.169:3306): SHOW SLAVE STATUS returned empty result. To check replication filtering rules, temporarily executing CHANGE MASTER to a dummy host.
+Tue May 24 15:22:04 2022 - [info] sun-partition-my2.pg1.krane.9rum.cc(10.194.41.169:3306): Resetting slave pointing to the dummy host.
+Tue May 24 15:22:04 2022 - [info]
+
+
+Tue May 24 15:22:04 2022 - [info] * Online Change Script Check Phase..
+Tue May 24 15:22:04 2022 - [info]
+Tue May 24 15:22:04 2022 - [debug] ##### Command       : status
+Tue May 24 15:22:04 2022 - [debug] ##### Failover Mode : dns
+Tue May 24 15:22:04 2022 - [debug] ##### DNS Server    : mydb.daumkakao.io
+Tue May 24 15:22:04 2022 - [debug] ##### Master Domain : sun-partition1g01
+Tue May 24 15:22:04 2022 - [info] Executing master ip online change script to check executable on the current master:
+Tue May 24 15:22:04 2022 - [info]   /db/programs/mha/scriptFile/master_ip_online_change --command=status --orig_master_host=sun-partition-my2.pg1.krane.9rum.cc --orig_master_ip=10.194.41.169 --orig_master_port=3306 --orig_master_user='kamha' --new_master_host=sun-partition-my1.pg1.krane.9rum.cc --new_master_ip=10.194.34.0 --new_master_port=3306 --new_master_user='kamha' --failover_mode=dns --dns_server=mydb.daumkakao.io --master_domain_name=sun-partition1g01 --orig_master_ssh_user=mysql --new_master_ssh_user=mysql   --orig_master_password='xxx' --new_master_password='xxx'
+Tue May 24 15:22:04 2022 819502 1. Check failover script exists & configuration correct .. Passed.
+Tue May 24 15:22:04 2022 838242 2. Check SSH connection on orig_master .. Passed.
+Tue May 24 15:22:05 2022 - [info]  ok.
+Tue May 24 15:22:05 2022 - [info] ** Phase 1: Configuration Check Phase completed.
+
+
+
+
+Tue May 24 15:22:05 2022 - [info]
+Tue May 24 15:22:05 2022 - [debug]  Disconnected from sun-partition-my2.pg1.krane.9rum.cc(10.194.41.169:3306)
+Tue May 24 15:22:05 2022 - [info] * Phase 2: Rejecting updates Phase..
+Tue May 24 15:22:05 2022 - [info]
+Tue May 24 15:22:05 2022 - [debug] ##### Command       : stop
+Tue May 24 15:22:05 2022 - [debug] ##### Failover Mode : dns
+Tue May 24 15:22:05 2022 - [debug] ##### DNS Server    : mydb.daumkakao.io
+Tue May 24 15:22:05 2022 - [debug] ##### Master Domain : sun-partition1g01
+Tue May 24 15:22:05 2022 - [info] Executing master ip online change script to disable write on the current master:
+Tue May 24 15:22:05 2022 - [info]   /db/programs/mha/scriptFile/master_ip_online_change --command=stop --orig_master_host=sun-partition-my2.pg1.krane.9rum.cc --orig_master_ip=10.194.41.169 --orig_master_port=3306 --orig_master_user='kamha' --new_master_host=sun-partition-my1.pg1.krane.9rum.cc --new_master_ip=10.194.34.0 --new_master_port=3306 --new_master_user='kamha' --failover_mode=dns --dns_server=mydb.daumkakao.io --master_domain_name=sun-partition1g01 --orig_master_ssh_user=mysql --new_master_ssh_user=mysql   --orig_master_is_new_slave --orig_master_password='xxx' --new_master_password='xxx'
+Tue May 24 15:22:05 2022 281629 Set read_only=1 on the new master.. ok.
+Tue May 24 15:22:05 2022 290152 Set read_only=1 on the orig master.. ok.
+Method            : PUT
+Domain            : sun-partition1g01.mydb.daumkakao.io
+Current IP        : 10.194.41.169
+New IP            : 10.194.34.0
+HTTP ResponseCode : 200
+Done.
+Method            : PUT
+Domain            : sun-partition1g01-slv.mydb.daumkakao.io
+Current IP        : 10.194.34.0
+New IP            : 10.194.41.169
+HTTP ResponseCode : 200
+Done.
+
+
+# 수행 중인 세션 킬
+Tue May 24 15:22:09 2022 112172 Waiting all running 4 threads are disconnected.. (max 1500 milliseconds)
+{'Time' => '9','db' => undef,'Id' => '8','User' => 'kapool','State' => '','Time_ms' => '8756','Command' => 'Sleep','Rows_examined' => '0','Info' => undef,'Rows_sent' => '0','Host' => '127.0.0.1:54656'}
+{'Time' => '9','db' => undef,'Id' => '9','User' => 'kapool','State' => '','Time_ms' => '8745','Command' => 'Sleep','Rows_examined' => '6','Info' => undef,'Rows_sent' => '0','Host' => '127.0.0.1:54658'}
+{'Time' => '9','db' => undef,'Id' => '10','User' => 'kapool','State' => '','Time_ms' => '8758','Command' => 'Sleep','Rows_examined' => '12','Info' => undef,'Rows_sent' => '0','Host' => '127.0.0.1:54660'}
+{'Time' => '85','db' => undef,'Id' => '21','User' => 'kadba','State' => '','Time_ms' => '85047','Command' => 'Sleep','Rows_examined' => '1','Info' => undef,'Rows_sent' => '1','Host' => 'localhost'}
+Tue May 24 15:22:09 2022 612986 Waiting all running 4 threads are disconnected.. (max 1000 milliseconds)
+{'Time' => '9','db' => undef,'Id' => '8','User' => 'kapool','State' => '','Time_ms' => '9256','Command' => 'Sleep','Rows_examined' => '0','Info' => undef,'Rows_sent' => '0','Host' => '127.0.0.1:54656'}
+{'Time' => '9','db' => undef,'Id' => '9','User' => 'kapool','State' => '','Time_ms' => '9246','Command' => 'Sleep','Rows_examined' => '6','Info' => undef,'Rows_sent' => '0','Host' => '127.0.0.1:54658'}
+{'Time' => '9','db' => undef,'Id' => '10','User' => 'kapool','State' => '','Time_ms' => '9258','Command' => 'Sleep','Rows_examined' => '12','Info' => undef,'Rows_sent' => '0','Host' => '127.0.0.1:54660'}
+{'Time' => '85','db' => undef,'Id' => '21','User' => 'kadba','State' => '','Time_ms' => '85548','Command' => 'Sleep','Rows_examined' => '1','Info' => undef,'Rows_sent' => '1','Host' => 'localhost'}
+Tue May 24 15:22:10 2022 113676 Waiting all running 4 threads are disconnected.. (max 500 milliseconds)
+{'Time' => '10','db' => undef,'Id' => '8','User' => 'kapool','State' => '','Time_ms' => '9757','Command' => 'Sleep','Rows_examined' => '0','Info' => undef,'Rows_sent' => '0','Host' => '127.0.0.1:54656'}
+{'Time' => '10','db' => undef,'Id' => '9','User' => 'kapool','State' => '','Time_ms' => '9747','Command' => 'Sleep','Rows_examined' => '6','Info' => undef,'Rows_sent' => '0','Host' => '127.0.0.1:54658'}
+{'Time' => '10','db' => undef,'Id' => '10','User' => 'kapool','State' => '','Time_ms' => '9759','Command' => 'Sleep','Rows_examined' => '12','Info' => undef,'Rows_sent' => '0','Host' => '127.0.0.1:54660'}
+{'Time' => '86','db' => undef,'Id' => '21','User' => 'kadba','State' => '','Time_ms' => '86049','Command' => 'Sleep','Rows_examined' => '1','Info' => undef,'Rows_sent' => '1','Host' => 'localhost'}
+Tue May 24 15:22:10 2022 615917 Waiting all running 4 queries are disconnected.. (max 500 milliseconds)
+{'Time' => '10','db' => undef,'Id' => '8','User' => 'kapool','State' => '','Time_ms' => '10259','Command' => 'Sleep','Rows_examined' => '0','Info' => undef,'Rows_sent' => '0','Host' => '127.0.0.1:54656'}
+{'Time' => '10','db' => undef,'Id' => '9','User' => 'kapool','State' => '','Time_ms' => '10249','Command' => 'Sleep','Rows_examined' => '6','Info' => undef,'Rows_sent' => '0','Host' => '127.0.0.1:54658'}
+{'Time' => '0','db' => undef,'Id' => '10','User' => 'kapool','State' => '','Time_ms' => '261','Command' => 'Sleep','Rows_examined' => '14','Info' => undef,'Rows_sent' => '0','Host' => '127.0.0.1:54660'}
+{'Time' => '86','db' => undef,'Id' => '21','User' => 'kadba','State' => '','Time_ms' => '86551','Command' => 'Sleep','Rows_examined' => '1','Info' => undef,'Rows_sent' => '1','Host' => 'localhost'}
+Tue May 24 15:22:11 2022 115427 Killing all application threads..
+Tue May 24 15:22:11 2022 120322 done.
+Number of remain threads : -1
+Tue May 24 15:22:11 2022 - [info]  ok.
+
+
+# 기존 마스터 변경 방지 구문 적용
+Tue May 24 15:22:11 2022 - [info] Locking all tables on the orig master to reject updates from everybody (including root):
+Tue May 24 15:22:11 2022 - [info] Executing FLUSH TABLES WITH READ LOCK..
+Tue May 24 15:22:11 2022 - [info]  ok.
+
+# 기존 마스터 빈로그값 확인
+Tue May 24 15:22:11 2022 - [info] Orig master binlog:pos is mysql-bin.000017:196.
+Tue May 24 15:22:11 2022 - [debug] Fetching current slave status..
+Tue May 24 15:22:11 2022 - [debug]  Fetching current slave status done.
+Tue May 24 15:22:11 2022 - [info]  Waiting to execute all relay logs on sun-partition-my1.pg1.krane.9rum.cc(10.194.34.0:3306)..
+Tue May 24 15:22:11 2022 - [info]  master_pos_wait(mysql-bin.000017:196) completed on sun-partition-my1.pg1.krane.9rum.cc(10.194.34.0:3306). Executed 0 events.
+Tue May 24 15:22:11 2022 - [info]   done.
+Tue May 24 15:22:11 2022 - [debug]  Stopping SQL thread on sun-partition-my1.pg1.krane.9rum.cc(10.194.34.0:3306)..
+Tue May 24 15:22:11 2022 - [debug]   done.
+
+
+# 새 마스터 빈 로그 확인 및 구문 생성
+Tue May 24 15:22:11 2022 - [info] Getting new master's binlog name and position..
+Tue May 24 15:22:11 2022 - [info]  mysql-bin.000014:196
+Tue May 24 15:22:11 2022 - [info]  All other slaves should start replication from here. Statement should be: CHANGE MASTER TO MASTER_HOST='sun-partition-my1.pg1.krane.9rum.cc', MASTER_PORT=3306, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='xxx';
+Tue May 24 15:22:11 2022 - [debug] ##### Command       : start
+Tue May 24 15:22:11 2022 - [debug] ##### Failover Mode : dns
+Tue May 24 15:22:11 2022 - [debug] ##### DNS Server    : mydb.daumkakao.io
+Tue May 24 15:22:11 2022 - [debug] ##### Master Domain : sun-partition1g01
+
+# 스크립트 start 수행
+Tue May 24 15:22:11 2022 - [info] Executing master ip online change script to allow write on the new master:
+Tue May 24 15:22:11 2022 - [info]   /db/programs/mha/scriptFile/master_ip_online_change --command=start --orig_master_host=sun-partition-my2.pg1.krane.9rum.cc --orig_master_ip=10.194.41.169 --orig_master_port=3306 --orig_master_user='kamha' --new_master_host=sun-partition-my1.pg1.krane.9rum.cc --new_master_ip=10.194.34.0 --new_master_port=3306 --new_master_user='kamha' --failover_mode=dns --dns_server=mydb.daumkakao.io --master_domain_name=sun-partition1g01 --orig_master_ssh_user=mysql --new_master_ssh_user=mysql   --orig_master_is_new_slave --orig_master_password='xxx' --new_master_password='xxx'
+Tue May 24 15:22:11 2022 265951 Set read_only=0 on the new master.
+Tue May 24 15:22:11 2022 - [info]  ok.
+Tue May 24 15:22:11 2022 - [info]
+
+
+########################
+
+
+
+
+///////////////////////// 
+Tue May 24 15:22:11 2022 - [info] * Switching slaves in parallel..
+Tue May 24 15:22:11 2022 - [info]
+Tue May 24 15:22:11 2022 - [info] -- Slave switch on host dbrecovery-normal-gs8.dakao.io(10.41.143.88:3306) started, pid: 1390
+Tue May 24 15:22:11 2022 - [info]
+Tue May 24 15:22:12 2022 - [info] Log messages from dbrecovery-normal-gs8.dakao.io ...
+Tue May 24 15:22:12 2022 - [info]
+Tue May 24 15:22:11 2022 - [info]  Waiting to execute all relay logs on dbrecovery-normal-gs8.dakao.io(10.41.143.88:3306)..
+Tue May 24 15:22:11 2022 - [info]  master_pos_wait(mysql-bin.000017:196) completed on dbrecovery-normal-gs8.dakao.io(10.41.143.88:3306). Executed 0 events.
+Tue May 24 15:22:11 2022 - [info]   done.
+Tue May 24 15:22:11 2022 - [debug]  Stopping SQL thread on dbrecovery-normal-gs8.dakao.io(10.41.143.88:3306)..
+Tue May 24 15:22:11 2022 - [debug]   done.
+Tue May 24 15:22:11 2022 - [info]  Resetting slave dbrecovery-normal-gs8.dakao.io(10.41.143.88:3306) and starting replication from the new master sun-partition-my1.pg1.krane.9rum.cc(10.194.34.0:3306)..
+Tue May 24 15:22:11 2022 - [debug]  Stopping slave IO/SQL thread on dbrecovery-normal-gs8.dakao.io(10.41.143.88:3306)..
+Tue May 24 15:22:11 2022 - [debug]   done.
+Tue May 24 15:22:11 2022 - [debug] ##### GTID enabled / in change_master_and_start_slave function
+Tue May 24 15:22:11 2022 - [info]  Executed CHANGE MASTER.
+Tue May 24 15:22:11 2022 - [debug] ##### has_gtid value is : 1
+Tue May 24 15:22:11 2022 - [debug]  Starting slave IO/SQL thread on dbrecovery-normal-gs8.dakao.io(10.41.143.88:3306)..
+Tue May 24 15:22:11 2022 - [debug]   done.
+Tue May 24 15:22:11 2022 - [info]  Slave started.
+Tue May 24 15:22:12 2022 - [info] End of log messages from dbrecovery-normal-gs8.dakao.io ...
+Tue May 24 15:22:12 2022 - [info]
+Tue May 24 15:22:12 2022 - [info] -- Slave switch on host dbrecovery-normal-gs8.dakao.io(10.41.143.88:3306) succeeded.
+Tue May 24 15:22:12 2022 - [info] Unlocking all tables on the orig master:
+Tue May 24 15:22:12 2022 - [info] Executing UNLOCK TABLES..
+Tue May 24 15:22:12 2022 - [info]  ok.
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@  기존 마스터가 뉴 마스터에 붙도록 함 
+Tue May 24 15:22:12 2022 - [info] Starting orig master as a new slave..
+Tue May 24 15:22:12 2022 - [info]  Resetting slave sun-partition-my2.pg1.krane.9rum.cc(10.194.41.169:3306) and starting replication from the new master sun-partition-my1.pg1.krane.9rum.cc(10.194.34.0:3306)..
+Tue May 24 15:22:12 2022 - [debug] ##### GTID enabled / in change_master_and_start_slave function
+Tue May 24 15:22:12 2022 - [info]  Executed CHANGE MASTER.
+Tue May 24 15:22:12 2022 - [debug] ##### has_gtid value is : 1
+Tue May 24 15:22:12 2022 - [debug]  Starting slave IO/SQL thread on sun-partition-my2.pg1.krane.9rum.cc(10.194.41.169:3306)..
+Tue May 24 15:22:12 2022 - [debug]   done.
+Tue May 24 15:22:12 2022 - [info]  Slave started.
+Tue May 24 15:22:12 2022 - [debug]  ok.
+Tue May 24 15:22:12 2022 - [info] All new slave servers switched successfully.
+Tue May 24 15:22:12 2022 - [info]
+#######################
+
+
+
+
+Tue May 24 15:22:12 2022 - [info] * Phase 5: New master cleanup phase..
+Tue May 24 15:22:12 2022 - [info]
+Tue May 24 15:22:12 2022 - [debug]  Clearing slave info..
+Tue May 24 15:22:12 2022 - [debug]  Stopping slave IO/SQL thread on sun-partition-my1.pg1.krane.9rum.cc(10.194.34.0:3306)..
+Tue May 24 15:22:12 2022 - [debug]   done.
+Tue May 24 15:22:12 2022 - [debug]  SHOW SLAVE STATUS shows new master does not replicate from anywhere. OK.
+
+
+Tue May 24 15:22:12 2022 - [info]  sun-partition-my1.pg1.krane.9rum.cc: Resetting slave info succeeded.
+Tue May 24 15:22:12 2022 - [info] Switching master to sun-partition-my1.pg1.krane.9rum.cc(10.194.34.0:3306) completed successfully.
+Tue May 24 15:22:12 2022 - [debug]  Disconnected from sun-partition-my1.pg1.krane.9rum.cc(10.194.34.0:3306)
+Tue May 24 15:22:12 2022 - [debug]  Disconnected from sun-partition-my2.pg1.krane.9rum.cc(10.194.41.169:3306)
+Tue May 24 15:22:12 2022 - [debug]  Disconnected from dbrecovery-normal-gs8.dakao.io(10.41.143.88:3306)
+
+Tue May 24 15:22:13 2022 - [info] backup /db/mysql/conf/my.cnf (/tmp/my.cnf.20220524152212.backup) on the sun-partition-my2.pg1.krane.9rum.cc succeeded.
+Tue May 24 15:22:13 2022 - [info] The read_only option in the my.cnf on the sun-partition-my2.pg1.krane.9rum.cc has been changed from '#read_only' to 'read_only'.
+Tue May 24 15:22:14 2022 - [info] backup /db/mysql/conf/my.cnf (/tmp/my.cnf.20220524152214.backup) on the sun-partition-my1.pg1.krane.9rum.cc succeeded.
+Tue May 24 15:22:14 2022 - [info] The read_only option in the my.cnf on the sun-partition-my1.pg1.krane.9rum.cc has been changed from 'read_only' to '#read_only'.
+Tue May 24 15:22:14 2022 - [info]
+
+----- Switch Report -----
+
+sun-partition1g01: MySQL Master switch sun-partition-my2.pg1.krane.9rum.cc(10.194.41.169:3306) to sun-partition-my1.pg1.krane.9rum.cc(10.194.34.0:3306) succeeded
+
+[ MySQL Replication Topology ]
+From:
+sun-partition-my2.pg1.krane.9rum.cc(10.194.41.169:3306) (current master)
+ +--sun-partition-my1.pg1.krane.9rum.cc(10.194.34.0:3306)
+ +--dbrecovery-normal-gs8.dakao.io(10.41.143.88:3306)
+
+To:
+sun-partition-my1.pg1.krane.9rum.cc(10.194.34.0:3306) (new master)
+ +--dbrecovery-normal-gs8.dakao.io(10.41.143.88:3306)
+ +--sun-partition-my2.pg1.krane.9rum.cc(10.194.41.169:3306)
+-------------------------------------------
+master_log_file : mysql-bin.000014
+master_log_pos  : 196
+Complete to add the read_only option to the my.cnf file on the new slave
+Complete to remove the read_only option in the my.cnf file on the new master
+Tue May 24 15:22:14 2022 - [info] Sending Report ..
+Option new_slave_hosts requires an argument
+===== Sending Message to KAT =====
+now_time         : 2022-05-24 15:22:15{"message":"Message format is illegal. Can not get the host name.","status":500}
+===== Sending Message to API =====
+* MHA failover history insert API :
+{"message" : "success"}
+* MySQL repltype update API :
+{"message" : "success"}
+* Alert host rule update API :
+{"message" : "success"}

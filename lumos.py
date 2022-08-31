@@ -16,6 +16,8 @@ import re
 from typing import Optional
 from util.func import *
 import os
+from typing import List
+from starlette.responses import RedirectResponse
 
 app = fastapi.FastAPI()
 
@@ -103,6 +105,25 @@ def read_customed(service_name: Optional[str]="%", issue_type: Optional[str]="%"
 	return metadatas
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ### mha manager 접속 및 switch shell script 실행
 ### 대체로 만든 switch call이니 cnf에서 서버 정보를 가져오진 않음
 @app.get('/lumos/switch_call', tags=["switch_call"])
@@ -127,15 +148,20 @@ def switch_call():
 	cmd=f"masterha_master_switch --master_state=alive --conf=/etc/masterha/app1.cnf --new_master_host={slave_host} --interactive=0"
 	exit_status, stdout, stderr = shell.exec_command(cmd, "deploy")
 	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status), str(stdout), str(stderr)))
+	print(stdout)
 
 	if "gtid inconsistency" in stdout:
 		return "switching is failed.\n because gtid inconsistency problem."
-	elif "known_hosts inconsistency" in stdout:
-		return "switching is failed.\n because known_hosts inconsistency."
-	if "long query locked problem" in stdout:
+	if "wrong ip or host" in stdout:
+		return "switching is failed.\n because wrong ip or host in known_hosts file."
+	if "lock issue" in stdout:
 		return "switching is failed.\n because lock problem."
+	if "transaction is waiting" in stdout:
+		return "transaction is waiting. retry switching."
+	if "query is executing" in stdout:
+		return "query is executing. retry switching."
+		
 	return "switching is succeeded.\n"
-	# return stdout
 
 
 @app.get('/lumos/gtid_check', tags=["gtid_check"])
@@ -143,18 +169,22 @@ def gtid_check():
 	now = datetime.datetime.today().strftime("%Y%m%d")
 	Log = Logger("./logs/{}.log".format(now), 0)
 	Log.write_log(3, "[LUMOS][Report] Call Received\n")	
+
 	dbconn1 = MysqlConnector('master-practice.ay1.krane.9rum.cc', 3306, 'analysis', 'mha', 'mha')
 	dbconn2 = MysqlConnector('slave-practice.ay1.krane.9rum.cc', 3306, 'analysis', 'mha', 'mha')
+	query="show processlist;"
 
-	query1="show slave status;"
-	ret=dbconn1.execsql(query1)
-	
-	query2="show variables like 'server_uuid';"
+	ret1=dbconn1.execsql(query)
+	ret2=dbconn2.execsql(query)
+
 	master_uuid=""
-	if len(ret)==0:
-		master_uuid=dbconn1.execsql(query2)[0][1]
-	else:
-		master_uuid=dbconn2.execsql(query2)[0][1]
+	query1="show variables like 'server_uuid';"
+	for i in ret1:
+		if i[4]=="Binlog Dump GTID":
+			master_uuid=dbconn1.execsql(query1)[0][1]
+	for i in ret2:
+		if i[4]=="Binlog Dump GTID":
+			master_uuid=dbconn1.execsql(query1)[0][1]
 	
 	query3="show variables like 'gtid_executed';"
 	gtid_sets1=sorted(dbconn1.execsql(query3)[0][1].split(','))
@@ -170,104 +200,84 @@ def gtid_check():
 	return 1
 
 
-# ssh 접속 전에 hosts 정보 삭제하도록 함
-# @app.get('/lumos/known_hosts_check', tags=["known_hosts_check"])
-# def known_hosts_check():
-# 	now = datetime.datetime.today().strftime("%Y%m%d")
-# 	Log = Logger("./logs/{}.log".format(now), 0)
-# 	Log.write_log(3, "[LUMOS][Report] Call Received\n")	
-
-# 	# lumos server known_hosts 파일 내용 삭제
-# 	os.system("sed -i '/mha-practice/d' /home/deploy/.ssh/known_hosts; cat ~/.ssh/known_hosts")
-# 	os.system("sed -i '/master-practice/d' /home/deploy/.ssh/known_hosts; cat ~/.ssh/known_hosts")
-# 	os.system("sed -i '/slave-practice/d' /home/deploy/.ssh/known_hosts; cat ~/.ssh/known_hosts")
-
-# 	# 매니저에 접속해서 cnf 파일에서 master, slave 값을 가져와야 하나?
-
-# 	# mha, master, salve 각 서버 known_hosts 파일 내용 삭제
-# 	shell1 = ExecSSH(host='mha-practice.ay1.krane.9rum.cc', user='deploy', logger=Log)
-# 	shell2 = ExecSSH(host='master-practice.ay1.krane.9rum.cc', user='deploy', logger=Log)
-# 	shell3 = ExecSSH(host='slave-practice.ay1.krane.9rum.cc', user='deploy', logger=Log)
-
-# 	cmd1=f"sed -i '/[master-practice/d' /home/deploy/.ssh/known_hosts;sed -i '/slave-practice/d' /home/deploy/.ssh/known_hosts;"
-# 	exit_status1, stdout1, stderr1 = shell1.exec_command(cmd1, "deploy")
-# 	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status1), str(stdout1), str(stderr1)))
-
-# 	cmd2=f"sed -i '/slave-practice/d' /home/deploy/.ssh/known_hosts;sed -i '/mha-practice/d' /home/deploy/.ssh/known_hosts;"
-# 	exit_status2, stdout2, stderr2 = shell2.exec_command(cmd2, "deploy")
-# 	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status2), str(stdout2), str(stderr2)))
-
-# 	cmd3=f"sed -i '/mha-practice/d' /home/deploy/.ssh/known_hosts; sed -i '/master-practice/d' /home/deploy/.ssh/known_hosts;"
-# 	exit_status3, stdout3, stderr3 = shell3.exec_command(cmd3, "deploy")
-# 	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status3), str(stdout3), str(stderr3)))
-
-# 	return "known_hosts information deleted."
 
 
 
-
-
-
-
-
-
+# mha system 각 노드에서 known_host 파일 내용 삭제 로직
+# 1. mha switching script가 실행되면 mha cnf파일을 읽어 각 노드(매니저, master, slave) 호스트 명을 전부 가져옴.
+# 3. known_host 점검 api를 호출할 때 각 노드 호스트명을 post방식으로 담아 호출히도록 함.(swiching 스트립트 안에서 while문을 통해 n번 반복하도록 했음)
+# 4. 호출된 known_host 점검 api에서는 전달받은 호스트명을 기반으로 해당 노드에 접속해 known_hosts 파일 내용을 전부 삭제해서 해당 노드에서 다른 노드로의 잘못된 ssh 접속을 막도록 함.
 @app.post('/lumos/known_hosts_check', tags=["known_hosts_check"])
 def known_hosts_check(node: str):
 	now = datetime.datetime.today().strftime("%Y%m%d")
 	Log = Logger("./logs/{}.log".format(now), 0)
-	Log.write_log(3, "[LUMOS][Report] Call Received\n")	
+	Log.write_log(3, "[LUMOS][Report] Call Received\n")
 
 	shell = ExecSSH(host=node, user='deploy', logger=Log)
-	cmd=f"cat /dev/null > /home/deploy/.ssh/known_hosts"
-	exit_status, stdout, stderr = shell.exec_command(cmd, "deploy")
-	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status), str(stdout), str(stderr)))
+	try:
+		cmd=f"cat /dev/null > /home/deploy/.ssh/known_hosts"
+		exit_status, stdout, stderr = shell.exec_command(cmd, "deploy")
+		Log.write_log(3, "{}, {}, {}\n".format(str(exit_status), str(stdout), str(stderr)))
+		return 1
 
-	return "known_hosts information deleted."
-
-
-
-
-
-
-
-
-
+	except Exception as e:
+		return 0
 
 
 # lock issue
-@app.get('/lumos/locked_long_query_check', tags=["locked_long_query_check"])
-def locked_long_query_check():
+# mha swiching script 파일에서 lock_issue_check api를 호출할 때 각 노드 호스트명을 전달함
+# 전달한 호스트명이 마스터일 경우에 한해 밑에처럼 로직이 실행되도록 함
+@app.post('/lumos/lock_issue_check', tags=["lock_issue_check"])
+def locked_long_query_check(node: str):
+	node=node.strip()
+
 	now = datetime.datetime.today()
 	Log = Logger("./logs/{}.log".format(now), 0)
 	Log.write_log(3, "[LUMOS][Report] Call Received\n")	
-	dbconn = MysqlConnector('slave-practice.ay1.krane.9rum.cc', 3306, 'analysis', 'mha', 'mha')
 
-	# dbconn1 = MysqlConnector('master-practice.ay1.krane.9rum.cc', 3306, 'analysis', 'mha', 'mha')
-	# query1="show processlist;"
-	# ret=dbconn1.execsql(query1)
-	# master_host="slave-practice"
-	# for i in ret:
-	# 	if i[4]=="Binlog Dump GTID":
-	# 		master_host="master-practice"
-	# 		break
-
-	# if master_host=="master-practice":
-	# 	dbconn = MysqlConnector('master-pratice.ay1.krane.9rum.cc', 3306, 'analysis', 'mha', 'mha')
-	# else:
-	# 	dbconn = MysqlConnector('slave-pratice.ay1.krane.9rum.cc', 3306, 'analysis', 'mha', 'mha')
-
-	# print(master_host)
-	# blocking query(롱쿼리)가 시작된 시간 조회
-	query="select trx_started from information_schema.innodb_trx where trx_state='RUNNING' and trx_query is null order by trx_started;"
+	dbconn = MysqlConnector(node, 3306, 'analysis', 'mha', 'mha')
+	query="show processlist;"
 	ret=dbconn.execsql(query)
-	print(ret)
-	if len(ret)==0:
-		return 1
-	else:
-		now=datetime.datetime.today()
-		if now-ret[0][0]>datetime.timedelta(seconds=10):
-			return 0	
-	return 1
+
+	for i in ret:
+		# 만약 post를 통해 전달받은 호스트가 마스터라면 
+		if i[4]=="Binlog Dump GTID":
+
+			#query1. 트랜잭션이 락 상태에서 다른 트랜재션이 대기하고 있는 상황이 5초 이상 지속된다면 switching 실패되었다고 반환
+			#    	  -  waiting_trx_started, 즉 기다리는 트랜잭션의 대기시간이 5초 이상되었을 때 실패되도록 로직 작성
+			#query2. 트랜잭션 안에서 롱쿼리가 수행중인 경우 해당 롱쿼리가 5초 이상 지속된다면 switching 실패되었다고 반환
+			query1="""select r.trx_started waiting_trx_started, b.trx_id blocking_trx_id, b.trx_query blocking_trx_query, r.trx_id waiting_trx_id, r.trx_query waiting_trx_query 
+					from performance_schema.data_lock_waits w 
+					inner join information_schema.innodb_trx b on b.trx_id=w.blocking_engine_transaction_id 
+					inner join information_schema.innodb_trx r on r.trx_id=w.requesting_engine_transaction_id 
+					order by b.trx_started limit 1;"""
+			query2="select trx_started from information_schema.innodb_trx where trx_state='RUNNING' and trx_query is not null order by trx_started;"
+
+			ret1=dbconn.execsql(query1)
+			ret2=dbconn.execsql(query2)
+
+			now=datetime.datetime.today()
+			print(ret1)
+			print(ret2)
+
+			# 상황1, 2가 모두 아닐 경우 점검 이상 없음
+			if len(ret1)==0 and len(ret2)==0:
+				return 1
+			# 상황 1일 경우 5초 이상이면 실패하게 하고, 5초 미만이면 "Other transaction is waiting, retry swtching." 메세지를 보내 다시 swithcing 호출하도록 권함.
+			if len(ret1)!=0:
+				if now-ret1[0][0]>datetime.timedelta(seconds=5):
+					return 0
+				else:
+					return 2
+			# 상황 2일 경우 10초 이상이면 실패하게 하고, 10초 미만이면 "query is executing, retry switching" 메세지를 보내 다시 swithcing 호출하도록 권함.
+			if len(ret2)!=0:
+				if now-ret2[0][0]>datetime.timedelta(seconds=10):
+					return 0
+				else:
+					return 3
+					# return RedirectResponse(url='switch_call', status_code=302)
+
+	return "This host is not master."
 
 
 if __name__ == '__main__':

@@ -29,15 +29,15 @@ file_cnt=$(ls -al /data/* | grep ^- | awk '{print $9}' | wc -l);cnt=1;while [ ${
 
 
 # ims 정보 얻는 방법
-# curl -X GET 'http://api.ims.daumkakao.io/v1/serverViews?hostname=replica-master';
+curl -X GET 'http://api.ims.daumkakao.io/v1/serverViews?hostname=replica-master';
 
-# def get_ims_info_by_host_name(host_name):
-#     url = 'http://api.ims.daumkakao.io/v1/serverViews?hostname='+str(host_name)
-#     try:
-#         res = requests.get(url=url)
-#         return res
-#     except Exception as e:
-#         print(e)
+def get_ims_info_by_host_name(host_name):
+    url = 'http://api.ims.daumkakao.io/v1/serverViews?hostname='+str(host_name)
+    try:
+        res = requests.get(url=url)
+        return res
+    except Exception as e:
+        print(e)
 		
 # "zone_name":"ay_dev_vm", - zone정보
 # "loc_b":"AY1" -IDC 정보

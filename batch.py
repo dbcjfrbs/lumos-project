@@ -29,7 +29,7 @@ def batchWork():
 
 	Log.write_log(3, "[LUMOS][Report] Call Received\n")	
 	# mha ssh 접속해서 지금까지 업데이트 된 내역 가져오기
-	shell = ExecSSH(host='mha-test.ay1.krane.9rum.cc', user='deploy', logger=Log)
+	shell = ExecSSH(host='mha-practice.ay1.krane.9rum.cc', user='deploy', logger=Log)
 	#1. ls -al 확인하기 - manager, service_name, issue type, logfile, result
 	print0="{print $0}"
 	print9="{print $9}"
@@ -45,6 +45,7 @@ def batchWork():
 	cnt="{cnt}" 
 	file_cnt="{file_cnt}"
 	cmd2=f"file_cnt=$({cmd1} | wc -l);cnt=1;while [ ${cnt} -le ${file_cnt} ];do file_=$({cmd1} | head -$cnt | tail -1);file_path=$(sudo find /data -name $file_);cat $file_path | head -1 | cut -d ' ' -f 1-5;echo '_';cnt=$((cnt+1));done"
+	# cmd2=f"file_cnt=$({cmd1} | wc -l);cnt=1;while [ ${cnt} -le ${file_cnt} ];do file_=$({cmd1} | head -$cnt | tail -1);file_path=$(sudo find /data -name $file_);grep 'Phase 1' $file_path | head -1 | cut -d ' ' -f 1-5;echo '_';cnt=$((cnt+1));done"
 	exit_status2, stdout2, stderr2 = shell.exec_command(cmd2, "deploy")
 	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status2), str(stdout2), str(stderr2)))	 
 
@@ -59,10 +60,10 @@ def batchWork():
 	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status4), str(stdout4), str(stderr4)))
 	
 	#5. 각 파일 내용 확인하기 - issue_detail
-	cmd5=f"file_cnt=$({cmd1} | grep failover.err | wc -l);cnt=1;while [ ${cnt} -le ${file_cnt} ];do file_=$({cmd1} | grep failover.err | head -$cnt | tail -1);file_path=$(sudo find /data -name $file_);grep HealthCheck $file_path | head -1;echo '_';cnt=$((cnt+1));done"
+	cmd5=f"file_cnt=$({cmd1} | grep failover | wc -l);cnt=1;while [ ${cnt} -le ${file_cnt} ];do file_=$({cmd1} | grep failover | head -$cnt | tail -1);file_path=$(sudo find /data -name $file_);grep HealthCheck $file_path | head -1;echo '_';cnt=$((cnt+1));done"
 	# cmd5=f"file_cnt=$({cmd1} | wc -l);cnt=1;while [ ${cnt} -le ${file_cnt} ];do file_=$({cmd1} | head -$cnt | tail -1);file_path=$(sudo find /data -name $file_);grep HealthCheck $file_path | head -1;echo '_';cnt=$((cnt+1));done"
 	exit_status5, stdout5, stderr5 = shell.exec_command(cmd5, "deploy")
-	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status5), str(stdout5), str(stderr5)))	
+	Log.write_log(3, "{}, {}, {}\n".format(str(exit_status5), str(stdout5), str(stderr5)))
 
 	#6. 각 파일 내용 확인하기 - result
 	# cmd6=f"file_cnt=$({cmd1} | grep -e failover -e switch | wc -l);cnt=1;while [ ${cnt} -le ${file_cnt} ];do file_=$({cmd1} | grep -e failover -e switch | head -$cnt | tail -1);file_path=$(sudo find /data -name $file_);grep -A 2 -e 'Switch Report' -e 'Failover Report' $file_path | tail -1;echo '_';cnt=$((cnt+1));done"
@@ -129,11 +130,12 @@ def batchWork():
 			issue_details.append("mysql")
 		else:
 			issue_details.append("OS/Network")
+	print(parsed5)
 
 	# result
-	tmp=stdout6.split('\n')
+	tmp_result=stdout6.split('\n')
 	parsed6=[]
-	for i in tmp:
+	for i in tmp_result:
 		if len(i)==1:
 			continue
 		parsed6.append(i)
@@ -147,8 +149,12 @@ def batchWork():
 
 ### 파싱 데이터 db에 저장
 	dbconn = MysqlConnector('localhost', 3306, 'analysis', 'root', 'root')
+
+
+	result_cnt=0
+	failover_err_cnt=0
 	for i in range(len(parsed1)):
-		manager, service_name, logfile, issue_type, result, started_at, issue_detail, ended_at, zone, idc=parsed1[i][1], parsed1[i][0], parsed_enter[i], parsed1[i][4], "none", parsed2[i], "none", parsed3[i], "none", "none"
+		manager, service_name, logfile, issue_type, result, started_at, issue_detail, ended_at, zone, idc=parsed1[i][1], parsed1[i][0], parsed_enter[i], parsed1[i][4], "succeed", parsed2[i], "none", parsed3[i], "none", "none"
 #rename -> checked
 		if issue_type=="renamed":
 			issue_type="checked"
@@ -179,32 +185,37 @@ def batchWork():
 		idc_zone=get_ims_info_by_host_name(hosts[i]).json()
 		print(idc_zone)
 
-		zone="server is error. can't complete ims api request."
-		idc="server is error. can't complete ims api request."
+		zone="server may be destroyed."
+		idc="server may be destroyed."
 		if "status" not in idc_zone:
 			if "message"  not in idc_zone:
-				zone=idc_zone['results'][0]['zone_name']
+				zone=idc_zone['results'][0]['server_type']
 				idc=idc_zone['results'][0]['loc_b']
 		
 		if zone=="":
 			zone="none"
 
 		#추가 파싱 - result
-		result_cnt=0
+		# result_cnt=0
 # switch->switching 수정
-		if issue_type=="switching" or issue_type=="failover": # failover_completes는 따로 있음
-## 추가			
-			if issue_type=="failover" and "err" in logfile:
-				results[result_cnt]="failure"
+# 		if issue_type=="switching" or issue_type=="failover": # failover_completes는 따로 있음
+# ## 추가			
+# 			if issue_type=="failover" and "err" in logfile:
+# 				results[result_cnt]="failure"
 
+# 			result=results[result_cnt]
+# 			result_cnt+=1
+
+		if issue_type=="failover" and "err" in logfile:
+			results[result_cnt]="failure"
 			result=results[result_cnt]
 			result_cnt+=1
-
-
-
+		if issue_type=="switching":
+			result=results[result_cnt]
+			result_cnt+=1
+	
 		#추가 파싱 - issue_detail
-		failover_err_cnt=0
-		if issue_type=="failover" and result=="failure": # failover_completes는 따로 있음
+		if issue_type=="failover":
 			issue_detail=issue_details[failover_err_cnt]
 			failover_err_cnt+=1
 
@@ -213,6 +224,7 @@ def batchWork():
 
 	lastday=workday
 	return ret
+
 
 
 ### 초기화 - 맨 처음 가동 시 적용
